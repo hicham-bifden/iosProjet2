@@ -17,11 +17,9 @@ struct Dessert: Identifiable, Hashable {
 }
 
 // Modèle pour l'API Fakestoreapi
-struct ProductResponse: Codable, Identifiable {
-    let id: Int
+struct ProductResponse: Codable {
     let title: String
     let price: Double
-    let description: String
     let category: String
     let image: String
 }
@@ -106,10 +104,8 @@ struct ContentView: View {
                 if let data = data {
                     do {
                         let products = try JSONDecoder().decode([ProductResponse].self, from: data)
-                        
                         self.desserts = products.prefix(6).map { product in
-                            print("Image URL:", product.image)
-                            return Dessert(
+                            Dessert(
                                 name: product.title,
                                 type: product.category,
                                 price: product.price,
@@ -117,12 +113,11 @@ struct ContentView: View {
                             )
                         }
                         
-                        // Déclencher l'animation après le chargement des données
                         withAnimation {
                             showContent = true
                         }
                     } catch {
-                        print("Erreur de décodage: \(error)")
+                        print("Erreur: \(error)")
                     }
                 }
             }
@@ -133,7 +128,6 @@ struct ContentView: View {
 struct DessertRow: View {
     let dessert: Dessert
     @EnvironmentObject var cart: Cart
-    @State private var buttonScale: CGFloat = 1.0
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -152,17 +146,6 @@ struct DessertRow: View {
                 
                 if !cart.items.contains(dessert) {
                     Button(action: {
-                        // Animation simple du bouton
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            buttonScale = 0.8
-                        }
-                        
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            withAnimation(.easeInOut(duration: 0.4)) {
-                                buttonScale = 1.0
-                            }
-                        }
-                        
                         cart.add(dessert)
                     }) {
                         HStack(spacing: 8) {
@@ -180,7 +163,6 @@ struct DessertRow: View {
                         .cornerRadius(16)
                         .shadow(radius: 2)
                     }
-                    .scaleEffect(buttonScale)
                     .padding(.bottom, 8)
                 }
             }
@@ -208,17 +190,16 @@ struct CartView: View {
             if !cart.items.isEmpty {
                 Text("Votre panier (\(cart.items.count))")
                     .font(.headline)
+                
                 ForEach(cart.items) { dessert in
                     HStack {
-                        Text("\(dessert.name)")
+                        Text(dessert.name)
                         Spacer()
                         Button(action: {
-                            // Marquer l'item comme en cours de suppression
                             withAnimation(.easeInOut(duration: 0.5)) {
                                 removingItems.insert(dessert.id)
                             }
                             
-                            // Supprimer le produit après l'animation
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                 cart.remove(dessert)
                                 removingItems.remove(dessert.id)
@@ -232,7 +213,9 @@ struct CartView: View {
                     .opacity(removingItems.contains(dessert.id) ? 0.0 : 1.0)
                     .animation(.easeInOut(duration: 0.5), value: removingItems.contains(dessert.id))
                 }
+                
                 Divider()
+                
                 HStack {
                     Text("Total de la commande")
                         .font(.headline)
@@ -240,7 +223,7 @@ struct CartView: View {
                     Text(String(format: "$%.2f", cart.total()))
                         .font(.headline)
                 }
-               
+                
                 Button(action: { cart.clear() }) {
                     HStack {
                         Image("icon-order-confirmed")
