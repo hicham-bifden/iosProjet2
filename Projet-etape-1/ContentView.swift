@@ -65,7 +65,7 @@ class Cart: ObservableObject {
     }
 }
 
-// la vu  principale de l'application
+// la vu  principale de l application
 struct ContentView: View {
     @StateObject var cart = Cart() // instancier  le panier
     @State private var desserts: [Dessert] = []
@@ -78,7 +78,7 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Zone de défilement avec la liste des produits
+                // le   defilement avec la liste des produits
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         
@@ -96,20 +96,20 @@ struct ContentView: View {
                             DessertRow(dessert: dessert)
                                 .environmentObject(cart)
                                 .opacity(showContent ? 1 : 0) // Animation de fade-in
-                                .offset(y: showContent ? 0 : 20) // Animation de slide-up
+                                .offset(y: showContent ? 0 : 20) // Animation on  slide-up des carte
                                 .animation(.easeInOut(duration: 0.8).delay(Double(desserts.firstIndex(of: dessert) ?? 0) * 0.1), value: showContent)
                         }
                         Spacer()
                     }
                 }
-                // Vue du panier en bas de l'écran
+                // le content du panier en bas de l'écran
                 CartView()
                     .environmentObject(cart)
             }
             .background(Color.white)
             .navigationBarHidden(true)
             .onAppear {
-                loadProducts() // Charger les produits au démarrage
+                loadProducts() // loader les produits au démarrage
             }
         }
     }
@@ -121,7 +121,7 @@ struct ContentView: View {
                 // Utiliser la nouvelle classe ProductService avec async/await
                 let products = try await ProductService().fetchProducts()
                 
-                // Traiter les données sur le thread principal
+                // je trait   les données ici sur le thread principal
                 await MainActor.run {
                     self.desserts = products.prefix(6).map { product in
                         Dessert(
@@ -132,7 +132,7 @@ struct ContentView: View {
                         )
                     }
                     
-                    // Déclencher l'animation d'affichage
+                    // Déclencher l'animation d'affichage bool
                     withAnimation {
                         showContent = true
                     }
@@ -147,18 +147,18 @@ struct ContentView: View {
 // Vue pour afficher une ligne de dessert/produit
 struct DessertRow: View {
     let dessert: Dessert // Le dessert à afficher
-    @EnvironmentObject var cart: Cart // Référence au panier
+    @EnvironmentObject var cart: Cart
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack(alignment: .bottom) {
-                // Image du dessert (chargée depuis l'URL)
+                // Image du dessert (chargée depuis l'URL) a fixer
                 AsyncImage(url: URL(string: dessert.imageName)) { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 } placeholder: {
-                    // Placeholder pendant le chargement de l'image
+                    // cadre ou  l'image   doit etre afficher
                     Rectangle()
                         .fill(Color.gray.opacity(0.3))
                 }
@@ -166,7 +166,7 @@ struct DessertRow: View {
                 .clipped()
                 .cornerRadius(16)
                 
-                // Bouton "Ajouter au panier" (visible seulement si pas dans le panier)
+                // Bouton "Ajouter au panier" (visible seulement une seule fois on peux pas ajouter produit une seul fois )
                 if !cart.items.contains(dessert) {
                     Button(action: {
                         cart.add(dessert) // Ajouter au panier
@@ -190,7 +190,7 @@ struct DessertRow: View {
                 }
             }
             
-            // Informations du dessert
+            // les detail du produit /  du dessert
             Text(dessert.type)
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -205,7 +205,7 @@ struct DessertRow: View {
     }
 }
 
-// affichage de mon pannier
+// affichage de   pannier
 struct CartView: View {
     @EnvironmentObject var cart: Cart // Référence au panier
     

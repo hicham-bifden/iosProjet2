@@ -1,0 +1,183 @@
+{\rtf1\ansi\deff0 {\fonttbl {\f0 Times New Roman;}}
+\f0\fs24 
+
+{\b\fs28 Rapport - Projet iOS Application E-commerce\par}
+\par
+\par
+{\b\fs24 \'a7 Page de présentation\par}
+\par
+{\b Nom de l'étudiant :} Hicham Bifden\par
+{\b Thème de l'application :} Application e-commerce de produits/desserts\par
+{\b Date :} Décembre 2024\par
+{\b Technologie utilisée :} SwiftUI - iOS\par
+\par
+\par
+{\b\fs24 \'a7 Présentation de l'application\par}
+\par
+{\b Description générale}\par
+L'application est une {\b boutique en ligne simple} développée en SwiftUI qui permet aux utilisateurs de :\par
+- {\b Parcourir} une liste de produits (desserts/plats)\par
+- {\b Ajouter} des produits au panier d'achat\par
+- {\b Supprimer} des produits du panier\par
+- {\b Visualiser} le total de la commande\par
+- {\b Confirmer} la commande\par
+\par
+{\b Fonctionnalités principales}\par
+- \'a9 {\b Catalogue de produits} : Affichage des produits avec images, prix et descriptions\par
+- \'a9 {\b Panier d'achat} : Gestion des articles ajoutés avec calcul automatique du total\par
+- \'a9 {\b Interface utilisateur} : Design moderne avec animations fluides\par
+- \'a9 {\b Gestion d'état} : Utilisation de @StateObject et @EnvironmentObject pour la gestion du panier\par
+\par
+{\b Architecture technique}\par
+- {\b Framework :} SwiftUI\par
+- {\b Pattern :} MVVM (Model-View-ViewModel)\par
+- {\b Gestion d'état :} ObservableObject pour le panier\par
+- {\b Navigation :} NavigationView simple\par
+\par
+\par
+{\b\fs24 \'a7 Présentation de l'API utilisée\par}
+\par
+{\b API choisie :} FakeStoreAPI\par
+{\b URL de base :} https://fakestoreapi.com/products\par
+{\b Type :} API e-commerce gratuite\par
+{\b Format :} JSON\par
+\par
+{\b Pourquoi cette API ?}\par
+J'ai choisi {\b FakeStoreAPI} car :\par
+- \'a9 {\b Disponibilité} : API e-commerce fonctionnelle et gratuite\par
+- \'a9 {\b Simplicité} : Structure JSON simple et claire\par
+- \'a9 {\b Fiabilité} : API stable et bien documentée\par
+- \'a9 {\b Données complètes} : Contient images, prix, descriptions\par
+\par
+{\b Appel(s) API effectué(s)}\par
+\par
+{\b Structure de données reçue :}\par
+\{\par
+  "id": 1,\par
+  "title": "Nom du produit",\par
+  "price": 109.95,\par
+  "description": "Description du produit",\par
+  "category": "catégorie",\par
+  "image": "URL_de_l'image"\par
+\}\par
+\par
+{\b Code d'appel API :}\par
+// Service moderne avec async/await\par
+class ProductService \{\par
+    func fetchProducts() async throws -> [ProductResponse] \{\par
+        guard let url = URL(string: "https://fakestoreapi.com/products") else \{\par
+            throw URLError(.badURL)\par
+        \}\par
+        \par
+        let (data, _) = try await URLSession.shared.data(from: url)\par
+        return try JSONDecoder().decode([ProductResponse].self, from: data)\par
+    \}\par
+\}\par
+\par
+\par
+{\b\fs24 \'a7 Présentation des deux animations\par}
+\par
+{\b Animation 1 : Affichage des cartes (Fade-in et Slide-up)}\par
+\par
+{\b Description :} Animation d'apparition progressive des cartes de produits au chargement de l'application.\par
+\par
+{\b Code :}\par
+.opacity(showContent ? 1 : 0) // Animation de fade-in\par
+.offset(y: showContent ? 0 : 20) // Animation de slide-up\par
+.animation(.easeInOut(duration: 0.8).delay(Double(desserts.firstIndex(of: dessert) ?? 0) * 0.1), value: showContent)\par
+\par
+{\b Effet visuel :}\par
+- Les cartes apparaissent progressivement avec un effet de transparence\par
+- Chaque carte glisse vers le haut depuis une position légèrement décalée\par
+- Délai progressif de 0.1s entre chaque carte pour un effet en cascade\par
+\par
+{\b Animation 2 : Suppression des produits (Fade-out progressif)}\par
+\par
+{\b Description :} Animation d'opacité progressive quand un produit est supprimé du panier.\par
+\par
+{\b Code :}\par
+.opacity(removingItems.contains(dessert.id) ? 0.0 : 1.0) // Animation d'opacité\par
+.animation(.easeInOut(duration: 0.9), value: removingItems.contains(dessert.id))\par
+\par
+{\b Effet visuel :}\par
+- L'élément devient progressivement transparent pendant 0.9 seconde\par
+- Suppression effective après la fin de l'animation\par
+- Transition fluide et élégante\par
+\par
+\par
+{\b\fs24 \'a7 Problèmes rencontrés et solutions\par}
+\par
+{\b Problème 1 : Images ne s'affichent pas}\par
+\par
+{\b Description du problème :}\par
+Les images des produits ne s'affichent pas correctement dans l'application.\par
+\par
+{\b Diagnostic effectué :}\par
+- \'a9 Ajout de debug pour voir les URLs des images\par
+- \'a9 Amélioration de AsyncImage avec gestion d'erreurs\par
+- \'a9 Validation et nettoyage des URLs\par
+\par
+{\b État actuel :}\par
+- \'d8 {\b Non résolu} : Le problème persiste malgré les tentatives de correction\par
+- \'a7 {\b Hypothèses :}\par
+  - URLs d'images incorrectes ou invalides\par
+  - Problème de réseau ou de permissions\par
+  - Format d'URL non compatible avec AsyncImage\par
+\par
+{\b Tentatives de résolution :}\par
+// Amélioration d'AsyncImage avec gestion d'erreurs\par
+AsyncImage(url: URL(string: dessert.imageName)) \{ phase in\par
+    switch phase \{\par
+    case .empty:\par
+        Rectangle()\par
+            .fill(Color.gray.opacity(0.3))\par
+            .overlay(ProgressView())\par
+    case .success(let image):\par
+        image.resizable().aspectRatio(contentMode: .fill)\par
+    case .failure(_):\par
+        Rectangle()\par
+            .fill(Color.red.opacity(0.3))\par
+            .overlay(Text("Erreur image"))\par
+    \}\par
+\}\par
+\par
+{\b Problème 2 : Choix de l'API}\par
+\par
+{\b Raison du changement :}\par
+- \'d8 {\b API de recettes manquante} : L'API originale de recettes n'était pas disponible\par
+- \'a9 {\b Solution adoptée} : Utilisation de FakeStoreAPI (e-commerce)\par
+\par
+{\b Impact :}\par
+- Les données sont maintenant des produits e-commerce au lieu de recettes\par
+- Les prix sont disponibles et corrects\par
+- Structure de données plus complète\par
+\par
+\par
+{\b\fs24 \'a7 Conclusion\par}
+\par
+{\b Réalisations}\par
+- \'a9 {\b Application fonctionnelle} : Toutes les fonctionnalités de base opérationnelles\par
+- \'a9 {\b Interface moderne} : Design propre avec animations fluides\par
+- \'a9 {\b Code structuré} : Architecture MVVM avec SwiftUI\par
+- \'a9 {\b API intégrée} : Connexion réussie à FakeStoreAPI\par
+- \'a9 {\b Animations implémentées} : 2 animations simples et efficaces\par
+\par
+{\b Points d'amélioration}\par
+- \'a7 {\b Images} : Résolution du problème d'affichage des images\par
+- \'a7 {\b UI/UX} : Amélioration de l'interface utilisateur\par
+- \'a7 {\b Fonctionnalités} : Ajout de nouvelles fonctionnalités (filtres, recherche)\par
+\par
+{\b Apprentissages}\par
+- \'a7 {\b SwiftUI} : Maîtrise des concepts de base (State, ObservableObject, AsyncImage)\par
+- \'a7 {\b API Integration} : Utilisation d'async/await pour les appels réseau\par
+- \'a7 {\b Animations} : Implémentation d'animations simples et efficaces\par
+- \'a7 {\b Debug} : Techniques de diagnostic et résolution de problèmes\par
+\par
+\par
+{\b Note :} Ce projet démontre une bonne compréhension des concepts de base de SwiftUI et de l'intégration d'API. Le problème d'affichage des images reste à résoudre, mais l'architecture générale de l'application est solide et extensible.\par
+\par
+\par
+{\b Signature de l'étudiant :} _____________________\par
+\par
+{\b Date :} _____________________\par
+} 
