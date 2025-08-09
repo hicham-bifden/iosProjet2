@@ -16,6 +16,16 @@ struct Dessert: Identifiable, Hashable {
     let imageName: String
 }
 
+// Modèle pour l'API Fakestoreapi
+struct ProductResponse: Codable, Identifiable {
+    let id: Int
+    let title: String
+    let price: Double
+    let description: String
+    let category: String
+    let image: String
+}
+
 // Modèle de panier
 class Cart: ObservableObject {
     @Published var items: [Dessert] = []
@@ -41,19 +51,10 @@ class Cart: ObservableObject {
     }
 }
 
-// Liste des desserts
-let desserts: [Dessert] = [
-    Dessert(name: "Brownie Sundae", type: "Waffle", price: 6.5, imageName: "image-brownie-mobile"),
-    Dessert(name: "Macaron Mix of Five", type: "Macaron", price: 8.0, imageName: "image-macaron-mobile"),
-    Dessert(name: "Classic Tiramisu", type: "Tiramisu", price: 5.5, imageName: "image-tiramisu-mobile"),
-    Dessert(name: "Pistachio Baklava", type: "Baklava", price: 4.0, imageName: "image-baklava-mobile"),
-    Dessert(name: "Lemon Meringue Pie", type: "Pie", price: 5.0, imageName: "image-meringue-mobile"),
-    Dessert(name: "Vanilla Panakota", type: "Cake", price: 4.5, imageName: "image-panna-cotta-mobile"),
-    Dessert(name: "Salted Caramel Brownie", type: "Brownie", price: 5.5, imageName: "image-brownie-mobile")
-]
-
 struct ContentView: View {
     @StateObject var cart = Cart()
+    @State private var desserts: [Dessert] = []
+    @State private var isLoading = true
     
     var body: some View {
         NavigationView {
@@ -64,9 +65,16 @@ struct ContentView: View {
                             .font(.largeTitle).bold()
                             .padding(.horizontal)
                             .padding(.top)
-                        ForEach(desserts) { dessert in
-                            DessertRow(dessert: dessert)
-                                .environmentObject(cart)
+                        
+                        if isLoading {
+                            ProgressView()
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .padding()
+                        } else {
+                            ForEach(desserts) { dessert in
+                                DessertRow(dessert: dessert)
+                                    .environmentObject(cart)
+                            }
                         }
                         Spacer()
                     }
@@ -76,7 +84,36 @@ struct ContentView: View {
             }
             .background(Color.white)
             .navigationBarHidden(true)
+            .onAppear {
+                loadProducts()
+            }
         }
+    }
+    
+    func loadProducts() {
+        guard let url = URL(string: "https://fakestoreapi.com/products") else { return }
+        
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            DispatchQueue.main.async {
+                isLoading = false
+                
+                if let data = data {
+                    do {
+                        let products = try JSONDecoder().decode([ProductResponse].self, from: data)
+                        self.desserts = products.prefix(6).map { product in
+                            Dessert(
+                                name: product.title,
+                                type: product.category,
+                                price: product.price,
+                                imageName: product.image
+                            )
+                        }
+                    } catch {
+                        print("Erreur de décodage: \(error)")
+                    }
+                }
+            }
+        }.resume()
     }
 }
 
@@ -87,12 +124,17 @@ struct DessertRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack(alignment: .bottom) {
-                Image(dessert.imageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(height: 140)
-                    .clipped()
-                    .cornerRadius(16)
+                AsyncImage(url: URL(string: dessert.imageName)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                }
+                .frame(height: 140)
+                .clipped()
+                .cornerRadius(16)
                 
                 if !cart.items.contains(dessert) {
                     Button(action: { cart.add(dessert) }) {
