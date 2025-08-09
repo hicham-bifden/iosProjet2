@@ -55,6 +55,7 @@ struct ContentView: View {
     @StateObject var cart = Cart()
     @State private var desserts: [Dessert] = []
     @State private var isLoading = true
+    @State private var showContent = false
     
     var body: some View {
         NavigationView {
@@ -65,6 +66,8 @@ struct ContentView: View {
                             .font(.largeTitle).bold()
                             .padding(.horizontal)
                             .padding(.top)
+                            .opacity(showContent ? 1 : 0)
+                            .animation(.easeIn(duration: 0.6), value: showContent)
                         
                         if isLoading {
                             ProgressView()
@@ -74,6 +77,9 @@ struct ContentView: View {
                             ForEach(desserts) { dessert in
                                 DessertRow(dessert: dessert)
                                     .environmentObject(cart)
+                                    .opacity(showContent ? 1 : 0)
+                                    .offset(y: showContent ? 0 : 20)
+                                    .animation(.easeInOut(duration: 0.8).delay(Double(desserts.firstIndex(of: dessert) ?? 0) * 0.1), value: showContent)
                             }
                         }
                         Spacer()
@@ -100,13 +106,20 @@ struct ContentView: View {
                 if let data = data {
                     do {
                         let products = try JSONDecoder().decode([ProductResponse].self, from: data)
+                        
                         self.desserts = products.prefix(6).map { product in
-                            Dessert(
+                            print("Image URL:", product.image)
+                            return Dessert(
                                 name: product.title,
                                 type: product.category,
                                 price: product.price,
                                 imageName: product.image
                             )
+                        }
+                        
+                        // Déclencher l'animation après le chargement des données
+                        withAnimation {
+                            showContent = true
                         }
                     } catch {
                         print("Erreur de décodage: \(error)")
@@ -120,6 +133,7 @@ struct ContentView: View {
 struct DessertRow: View {
     let dessert: Dessert
     @EnvironmentObject var cart: Cart
+    @State private var buttonScale: CGFloat = 1.0
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -137,7 +151,20 @@ struct DessertRow: View {
                 .cornerRadius(16)
                 
                 if !cart.items.contains(dessert) {
-                    Button(action: { cart.add(dessert) }) {
+                    Button(action: {
+                        // Animation simple du bouton
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            buttonScale = 0.8
+                        }
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            withAnimation(.easeInOut(duration: 0.4)) {
+                                buttonScale = 1.0
+                            }
+                        }
+                        
+                        cart.add(dessert)
+                    }) {
                         HStack(spacing: 8) {
                             Image("icon-add-to-cart")
                                 .resizable()
@@ -153,6 +180,7 @@ struct DessertRow: View {
                         .cornerRadius(16)
                         .shadow(radius: 2)
                     }
+                    .scaleEffect(buttonScale)
                     .padding(.bottom, 8)
                 }
             }
@@ -173,6 +201,7 @@ struct DessertRow: View {
 
 struct CartView: View {
     @EnvironmentObject var cart: Cart
+    @State private var removingItems: Set<UUID> = []
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -183,12 +212,25 @@ struct CartView: View {
                     HStack {
                         Text("\(dessert.name)")
                         Spacer()
-                        Button(action: { cart.remove(dessert) }) {
+                        Button(action: {
+                            // Marquer l'item comme en cours de suppression
+                            withAnimation(.easeInOut(duration: 0.5)) {
+                                removingItems.insert(dessert.id)
+                            }
+                            
+                            // Supprimer le produit après l'animation
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                cart.remove(dessert)
+                                removingItems.remove(dessert.id)
+                            }
+                        }) {
                             Image("icon-remove-item")
                                 .resizable()
                                 .frame(width: 18, height: 18)
                         }
                     }
+                    .opacity(removingItems.contains(dessert.id) ? 0.0 : 1.0)
+                    .animation(.easeInOut(duration: 0.5), value: removingItems.contains(dessert.id))
                 }
                 Divider()
                 HStack {
